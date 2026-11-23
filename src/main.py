@@ -151,6 +151,11 @@ def main(argv: list[str] | None = None) -> int:
 
     manifest = run_pipeline(settings=settings, selected_sources=args.sources)
     summary = manifest["summary"]
+    for key, info in manifest["sources"].items():
+        if info["status"] == "success":
+            print(f"  [OK] {key}: {info['records']} records ({info['duration_seconds']}s)")
+        else:
+            print(f"  [FAILED] {key} ({info['duration_seconds']}s): {info['error']}")
     print(
         f"Pipeline finished for run_slot={manifest['run_slot']}: "
         f"{summary['succeeded']}/{summary['total_sources']} succeeded, "
