@@ -1,0 +1,84 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+    branches: [dev, main]
+
+env:
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  test:
+    name: Test Scraping Application
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Lint with Ruff
+        run: ruff check .
+
+      - name: Run unit tests with Pytest
+        run: pytest
+
+  scrape:
+    name: Run Scraper
+    needs: test
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Check FIRMS secret availability
+        env:
+          FIRMS_API_KEY: ${{ secrets.FIRMS_API_KEY }}
+        run: |
+          if [ -z "$FIRMS_API_KEY" ]; then
+            echo "::warning::FIRMS_API_KEY secret is not set; NASA FIRMS source will be skipped/failed in CI."
+          else
+            echo "FIRMS_API_KEY secret is configured."
+          fi
+
+      - name: Run scraping pipeline
+        env:
+          FIRMS_API_KEY: ${{ secrets.FIRMS_API_KEY }}
+        run: python -m src.main
+
+      - name: Show manifest
+        run: |
+          echo "## Hasil scraping" >> "$GITHUB_STEP_SUMMARY"
+          echo '```json' >> "$GITHUB_STEP_SUMMARY"
+          cat data/manifest.json >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload scraping result
+        uses: actions/upload-artifact@v4
+        with:
+          name: scraping-output-${{ github.run_id }}
+          path: data/
+          retention-days: 7
