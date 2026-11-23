@@ -8,7 +8,7 @@ import sys
 import time
 from collections.abc import Callable
 from dataclasses import replace
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -96,7 +96,7 @@ def run_pipeline(
     total_elapsed = round(time.perf_counter() - pipeline_start, 2)
     manifest: dict[str, Any] = {
         "run_slot": run_slot,
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
         "duration_seconds": total_elapsed,
         "github": {
             "repository": os.getenv("GITHUB_REPOSITORY", "local"),

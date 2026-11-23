@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import pandas as pd
@@ -82,7 +82,7 @@ def fetch_weather(
         timeout=settings.request_timeout_seconds,
     )
     response.raise_for_status()
-    ingested_at_utc = datetime.now(timezone.utc).isoformat()
+    ingested_at_utc = datetime.now(UTC).isoformat()
     df = parse_weather_response(
         response.json(),
         locations=MONITORED_LOCATIONS,

@@ -39,7 +39,11 @@ def _create_valid_data_dir(tmp_path: Path) -> Path:
     manifest = {
         "run_slot": "2026/11/23/1200",
         "generated_at": "2026-11-23T12:05:00+00:00",
-        "summary": {"total_sources": len(REQUIRED_SOURCES), "succeeded": len(REQUIRED_SOURCES), "failed": 0},
+        "summary": {
+            "total_sources": len(REQUIRED_SOURCES),
+            "succeeded": len(REQUIRED_SOURCES),
+            "failed": 0,
+        },
         "sources": sources,
     }
     (data_dir / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")

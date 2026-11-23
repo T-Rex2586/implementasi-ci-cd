@@ -7,7 +7,10 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
 
-def build_http_session(max_retries: int = 3, user_agent: str = "tcba-cicd-pipeline/1.0") -> requests.Session:
+def build_http_session(
+    max_retries: int = 3,
+    user_agent: str = "tcba-cicd-pipeline/1.0",
+) -> requests.Session:
     """Create a requests.Session configured with exponential backoff retries."""
     retry_strategy = Retry(
         total=max_retries,

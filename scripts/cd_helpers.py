@@ -21,7 +21,10 @@ def load_manifest(data_dir: Path) -> dict[str, Any]:
     return json.loads(manifest_path.read_text(encoding="utf-8"))
 
 
-def validate_manifest(data_dir: Path, required_sources: tuple[str, ...] = REQUIRED_SOURCES) -> dict[str, Any]:
+def validate_manifest(
+    data_dir: Path,
+    required_sources: tuple[str, ...] = REQUIRED_SOURCES,
+) -> dict[str, Any]:
     """Validate that manifest.json is complete and every required source succeeded."""
     manifest = load_manifest(data_dir)
     if not manifest.get("run_slot"):

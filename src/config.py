@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -102,7 +102,7 @@ def compute_run_slot(now: datetime | None = None) -> tuple[str, str]:
         Tuple of (run_slot, compact_timestamp), e.g.
         ("2026/11/23/1200", "20261123T120000Z").
     """
-    current = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
+    current = (now or datetime.now(UTC)).astimezone(UTC)
     slot_hour = (current.hour // 6) * 6
     slot_dt = current.replace(hour=slot_hour, minute=0, second=0, microsecond=0)
     run_slot = slot_dt.strftime("%Y/%m/%d/%H00")

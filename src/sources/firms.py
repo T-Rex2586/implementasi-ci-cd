@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import io
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import pandas as pd
@@ -39,7 +39,11 @@ def parse_firms_csv(csv_text: str, sensor: str, ingested_at_utc: str) -> pd.Data
         return pd.DataFrame(columns=EXPECTED_COLUMNS)
 
     lower_head = stripped[:200].lower()
-    if "invalid map_key" in lower_head or lower_head.startswith("<!doctype html") or lower_head.startswith("<html"):
+    if (
+        "invalid map_key" in lower_head
+        or lower_head.startswith("<!doctype html")
+        or lower_head.startswith("<html")
+    ):
         raise ValueError(f"NASA FIRMS returned an error response for {sensor}: {stripped[:160]}")
 
     df = pd.read_csv(io.StringIO(stripped))
@@ -75,7 +79,7 @@ def fetch_firms_hotspots(
         )
 
     bbox_str = ",".join(str(coord) for coord in INDONESIA_BBOX)
-    ingested_at_utc = datetime.now(timezone.utc).isoformat()
+    ingested_at_utc = datetime.now(UTC).isoformat()
     frames: list[pd.DataFrame] = []
 
     for sensor in settings.firms_sensors:

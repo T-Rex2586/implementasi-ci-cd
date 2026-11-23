@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from urllib.parse import urljoin
 
@@ -33,7 +33,7 @@ def parse_magma_html(html: str, base_url: str) -> list[dict[str, Any]]:
     soup = BeautifulSoup(html, "lxml")
     records: list[dict[str, Any]] = []
     seen: set[str] = set()
-    scraped_at = datetime.now(timezone.utc).isoformat()
+    scraped_at = datetime.now(UTC).isoformat()
 
     # Strategy 1: Cards/sections grouped by alert level headings
     current_level = "Unknown"
@@ -49,7 +49,10 @@ def parse_magma_html(html: str, base_url: str) -> list[dict[str, Any]]:
             continue
 
         if element.name == "tr":
-            cells = [" ".join(td.get_text(" ", strip=True).split()) for td in element.find_all("td")]
+            cells = [
+                " ".join(td.get_text(" ", strip=True).split())
+                for td in element.find_all("td")
+            ]
             if len(cells) >= 2:
                 volcano_name = cells[0]
                 province = cells[1] if len(cells) >= 2 else ""
@@ -109,7 +112,7 @@ def fetch_magma_activity(
     payload = {
         "source": "MAGMA Indonesia (PVMBG / Badan Geologi ESDM)",
         "url": settings.magma_url,
-        "scraped_at_utc": datetime.now(timezone.utc).isoformat(),
+        "scraped_at_utc": datetime.now(UTC).isoformat(),
         "total_volcanoes": len(records),
         "records": records,
     }
