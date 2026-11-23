@@ -28,7 +28,7 @@ def test_cd_workflow_contract() -> None:
     wf = _load_workflow("ingestion.yml")
     triggers = wf.get("on") or wf.get(True)
     assert "workflow_dispatch" in triggers
-    assert triggers["schedule"] == [{"cron": "0 */6 * * *"}]
+    assert triggers["schedule"] == [{"cron": "0 0 * * *"}]
     assert triggers["push"]["branches"] == ["main"]
     assert wf["permissions"]["id-token"] == "write"
     assert wf["permissions"]["contents"] == "read"

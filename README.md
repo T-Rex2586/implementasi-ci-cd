@@ -1,6 +1,6 @@
 # CI/CD Scraping Data Pipeline — Azure Blob Storage & GitHub Actions
 
-Pipeline ingestion otomatis berbasis Python dengan CI/CD GitHub Actions (scheduler setiap 6 jam) dan penyimpanan terpusat di **Azure Blob Storage / ADLS Gen2** menggunakan autentikasi **OIDC (Microsoft Entra ID Federated Credentials)**.
+Pipeline ingestion otomatis berbasis Python dengan CI/CD GitHub Actions (scheduler setiap 1 hari pada 00:00 UTC / 07:00 WIB) dan penyimpanan terpusat di **Azure Blob Storage / ADLS Gen2** menggunakan autentikasi **OIDC (Microsoft Entra ID Federated Credentials)**.
 
 ## Sumber Data (5 Sources)
 
