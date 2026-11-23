@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+
+# Environment variables
+.env
+.env.local
+
+# Generated runtime data & staging
+data/firms/
+data/magma/
+data/air_quality/
+data/weather/
+data/mcd_burned_scar/
+data/manifest.json
+.staging/
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
