@@ -121,10 +121,12 @@ jobs:
           SYNAPSE_PIPELINE: ${{ vars.AZURE_SYNAPSE_PIPELINE }}
           RUN_SLOT: ${{ needs.deploy.outputs.run_slot }}
         run: |
-          RUN_ID=$(az synapse pipeline create-run \
-            --workspace-name "${SYNAPSE_WORKSPACE}" \
-            --name "${SYNAPSE_PIPELINE}" \
-            --parameters "{\"run_slot\": \"${RUN_SLOT}\"}" \
+          RUN_ID=$(az rest \
+            --method post \
+            --url "https://${SYNAPSE_WORKSPACE}.dev.azuresynapse.net/pipelines/${SYNAPSE_PIPELINE}/createRun?api-version=2020-12-01" \
+            --resource "https://dev.azuresynapse.net" \
+            --headers "Content-Type=application/json" \
+            --body "{\"run_slot\": \"${RUN_SLOT}\"}" \
             --query runId \
             --output tsv)
           echo "Triggered Synapse pipeline run: ${RUN_ID}"
