@@ -20,10 +20,15 @@ FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
 def test_parse_firms_csv_normalizes_viirs_and_modis() -> None:
     viirs_csv = (
-        "latitude,longitude,bright_ti4,acq_date,acq_time,satellite,instrument,confidence,frp,daynight\n"
+        "latitude,longitude,bright_ti4,acq_date,acq_time,"
+        "satellite,instrument,confidence,frp,daynight\n"
         "-2.15,113.91,330.5,2026-11-23,512,N,VIIRS,n,12.4,D\n"
     )
-    df = parse_firms_csv(viirs_csv, sensor="VIIRS_SNPP_NRT", ingested_at_utc="2026-11-23T12:00:00Z")
+    df = parse_firms_csv(
+        viirs_csv,
+        sensor="VIIRS_SNPP_NRT",
+        ingested_at_utc="2026-11-23T12:00:00Z",
+    )
     assert len(df) == 1
     assert df.loc[0, "sensor"] == "VIIRS_SNPP_NRT"
     assert df.loc[0, "brightness"] == 330.5
@@ -32,12 +37,19 @@ def test_parse_firms_csv_normalizes_viirs_and_modis() -> None:
 
 def test_parse_firms_csv_raises_on_invalid_key() -> None:
     with pytest.raises(ValueError, match="error response"):
-        parse_firms_csv("Invalid MAP_KEY.", sensor="MODIS_NRT", ingested_at_utc="2026-11-23T12:00:00Z")
+        parse_firms_csv(
+            "Invalid MAP_KEY.",
+            sensor="MODIS_NRT",
+            ingested_at_utc="2026-11-23T12:00:00Z",
+        )
 
 
 def test_parse_magma_html_extracts_volcanoes() -> None:
     html = (FIXTURES_DIR / "magma_sample.html").read_text(encoding="utf-8")
-    records = parse_magma_html(html, base_url="https://magma.esdm.go.id/v1/gunung-api/tingkat-aktivitas")
+    records = parse_magma_html(
+        html,
+        base_url="https://magma.esdm.go.id/v1/gunung-api/tingkat-aktivitas",
+    )
     names = {r["volcano_name"]: r["activity_level"] for r in records}
     assert names["Merapi"] == "Level III (Siaga)"
     assert names["Lewotobi Laki-laki"] == "Level IV (Awas)"

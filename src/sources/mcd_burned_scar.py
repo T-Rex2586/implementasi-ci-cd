@@ -7,7 +7,7 @@ Access: Public STAC REST API (no API key or NASA Earthdata login required).
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import pandas as pd
@@ -112,9 +112,11 @@ def fetch_mcd_burned_scar(
     compact_timestamp: str,
 ) -> dict[str, Any]:
     """Query latest MODIS MCD64A1 burned area / burned scar tiles over Indonesia."""
-    now_utc = datetime.now(timezone.utc)
+    now_utc = datetime.now(UTC)
     start_dt = now_utc - timedelta(days=settings.mcd_lookback_days)
-    datetime_range = f"{start_dt.strftime('%Y-%m-%dT%H:%M:%SZ')}/{now_utc.strftime('%Y-%m-%dT%H:%M:%SZ')}"
+    datetime_range = (
+        f"{start_dt.strftime('%Y-%m-%dT%H:%M:%SZ')}/{now_utc.strftime('%Y-%m-%dT%H:%M:%SZ')}"
+    )
 
     search_body = {
         "collections": [settings.mcd_collection],
