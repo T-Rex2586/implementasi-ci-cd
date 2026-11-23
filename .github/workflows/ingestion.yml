@@ -1,0 +1,98 @@
+name: Continuous Deployment (Azure Blob Storage)
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 */6 * * *"
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: ingestion-deploy
+  cancel-in-progress: false
+
+env:
+  PYTHON_VERSION: "3.12"
+  AZURE_STORAGE_ACCOUNT: ${{ vars.AZURE_STORAGE_ACCOUNT }}
+  AZURE_STORAGE_CONTAINER: ${{ vars.AZURE_STORAGE_CONTAINER }}
+
+jobs:
+  deploy:
+    name: Scrape and Upload
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run scraping pipeline (strict)
+        env:
+          FIRMS_API_KEY: ${{ secrets.FIRMS_API_KEY }}
+        run: python -m src.main --strict
+
+      - name: Validate scraping result and manifest
+        run: python -m scripts.cd_helpers validate --data-dir data
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Prepare blob staging
+        id: staging
+        run: |
+          python -m scripts.cd_helpers stage \
+            --data-dir data \
+            --staging-dir .staging \
+            --github-output "$GITHUB_OUTPUT"
+
+      - name: Upload to Azure Blob Storage
+        run: |
+          az storage blob upload-batch \
+            --account-name "${AZURE_STORAGE_ACCOUNT}" \
+            --destination "${AZURE_STORAGE_CONTAINER}" \
+            --destination-path "${{ steps.staging.outputs.blob_prefix }}" \
+            --source ".staging/${{ steps.staging.outputs.blob_prefix }}" \
+            --auth-mode login \
+            --overwrite
+
+      - name: Verify uploaded blobs
+        run: |
+          az storage blob list \
+            --account-name "${AZURE_STORAGE_ACCOUNT}" \
+            --container-name "${AZURE_STORAGE_CONTAINER}" \
+            --prefix "${{ steps.staging.outputs.blob_prefix }}" \
+            --auth-mode login \
+            --output json > uploaded_blobs.json
+          python -m scripts.cd_helpers verify \
+            --staging-dir ".staging/${{ steps.staging.outputs.blob_prefix }}" \
+            --blob-prefix "${{ steps.staging.outputs.blob_prefix }}" \
+            --uploaded-json uploaded_blobs.json
+
+      - name: Write GitHub Actions summary
+        if: always()
+        run: |
+          STATUS=$([ "${{ job.status }}" = "success" ] && echo "PASS" || echo "FAILED")
+          python -m scripts.cd_helpers summary \
+            --status "$STATUS" \
+            --storage-account "${AZURE_STORAGE_ACCOUNT}" \
+            --container "${AZURE_STORAGE_CONTAINER}" \
+            --data-dir data \
+            --blob-prefix "${{ steps.staging.outputs.blob_prefix }}" \
+            >> "$GITHUB_STEP_SUMMARY"
