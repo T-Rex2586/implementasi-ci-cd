@@ -22,9 +22,12 @@ env:
 
 jobs:
   deploy:
-    name: Scrape and Upload
+    name: Scrape and Upload (Bronze)
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    outputs:
+      run_slot: ${{ steps.staging.outputs.run_slot }}
+      blob_prefix: ${{ steps.staging.outputs.blob_prefix }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -96,3 +99,47 @@ jobs:
             --data-dir data \
             --blob-prefix "${{ steps.staging.outputs.blob_prefix }}" \
             >> "$GITHUB_STEP_SUMMARY"
+
+  trigger-silver:
+    name: Trigger Synapse (Bronze to Silver)
+    needs: deploy
+    if: ${{ vars.AZURE_SYNAPSE_WORKSPACE != '' && vars.AZURE_SYNAPSE_PIPELINE != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Azure login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Trigger Synapse Bronze to Silver pipeline
+        id: synapse
+        env:
+          SYNAPSE_WORKSPACE: ${{ vars.AZURE_SYNAPSE_WORKSPACE }}
+          SYNAPSE_PIPELINE: ${{ vars.AZURE_SYNAPSE_PIPELINE }}
+          RUN_SLOT: ${{ needs.deploy.outputs.run_slot }}
+        run: |
+          RUN_ID=$(az synapse pipeline create-run \
+            --workspace-name "${SYNAPSE_WORKSPACE}" \
+            --name "${SYNAPSE_PIPELINE}" \
+            --parameters "{\"run_slot\": \"${RUN_SLOT}\"}" \
+            --query runId \
+            --output tsv)
+          echo "Triggered Synapse pipeline run: ${RUN_ID}"
+          echo "synapse_run_id=${RUN_ID}" >> "$GITHUB_OUTPUT"
+
+      - name: Write Synapse trigger summary
+        if: always()
+        run: |
+          {
+            echo "## Azure Synapse — Bronze to Silver Trigger"
+            echo ""
+            echo "| Item | Nilai |"
+            echo "| --- | --- |"
+            echo "| Workspace | \`${{ vars.AZURE_SYNAPSE_WORKSPACE }}\` |"
+            echo "| Pipeline | \`${{ vars.AZURE_SYNAPSE_PIPELINE }}\` |"
+            echo "| Run slot | \`${{ needs.deploy.outputs.run_slot }}\` |"
+            echo "| Synapse Run ID | \`${{ steps.synapse.outputs.synapse_run_id }}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"

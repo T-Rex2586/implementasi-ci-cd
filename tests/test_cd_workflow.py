@@ -32,3 +32,5 @@ def test_cd_workflow_contract() -> None:
     assert triggers["push"]["branches"] == ["main"]
     assert wf["permissions"]["id-token"] == "write"
     assert wf["permissions"]["contents"] == "read"
+    assert "run_slot" in wf["jobs"]["deploy"]["outputs"]
+    assert wf["jobs"]["trigger-silver"]["needs"] == "deploy"
